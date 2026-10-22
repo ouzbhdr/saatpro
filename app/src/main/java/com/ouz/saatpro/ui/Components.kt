@@ -32,9 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,7 +70,6 @@ fun RamsStatusPill(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Braun tarzı küçük durum lambası
                 Box(
                     modifier = Modifier
                         .size(10.dp)
@@ -176,84 +173,76 @@ fun RamsClockDialButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Logodaki analog saat kadranı ve minimalist çizgiler
         Canvas(modifier = Modifier.fillMaxSize().padding(14.dp)) {
-            val center = Offset(size.width / 2, size.height / 2)
-            val radius = size.width / 2
+            val cX = drawContext.size.width / 2f
+            val cY = drawContext.size.height / 2f
+            val r = drawContext.size.width / 2f
 
-            // Kadran çizgileri (12 ana ve ara çizgiler)
+            val hourLineLen = 14.dp.toPx()
+            val minLineLen = 6.dp.toPx()
+            val hourStroke = 2.5f.dp.toPx()
+            val minStroke = 1.dp.toPx()
+
+            // 60 kadran çizgisi
             for (i in 0 until 60) {
-                val angle = (i * 6) * (PI / 180f)
+                val angle = (i * 6f) * (PI.toFloat() / 180f)
                 val isHour = i % 5 == 0
-                val lineLength = if (isHour) 14.dp.toPx() else 6.dp.toPx()
-                val strokeWidth = if (isHour) 2.5.dp.toPx() else 1.dp.toPx()
-                val lineColor = if (isHour) BraunCharcoal else BraunSubText.copy(alpha = 0.6f)
+                val lineLen = if (isHour) hourLineLen else minLineLen
+                val strokeW = if (isHour) hourStroke else minStroke
+                val color = if (isHour) BraunCharcoal else BraunSubText.copy(alpha = 0.6f)
 
-                val start = Offset(
-                    x = (center.x + (radius - lineLength) * cos(angle)).toFloat(),
-                    y = (center.y + (radius - lineLength) * sin(angle)).toFloat()
-                )
-                val end = Offset(
-                    x = (center.x + radius * cos(angle)).toFloat(),
-                    y = (center.y + radius * sin(angle)).toFloat()
-                )
+                val startX = cX + (r - lineLen) * cos(angle)
+                val startY = cY + (r - lineLen) * sin(angle)
+                val endX = cX + r * cos(angle)
+                val endY = cY + r * sin(angle)
+
                 drawLine(
-                    color = lineColor,
-                    start = start,
-                    end = end,
-                    strokeWidth = strokeWidth,
+                    color = color,
+                    start = Offset(startX, startY),
+                    end = Offset(endX, endY),
+                    strokeWidth = strokeW,
                     cap = StrokeCap.Round
                 )
             }
 
             // Saat İbresi
-            val hourAngle = ((hour % 12 + minute / 60f) * 30f - 90f) * (PI / 180f)
-            val hourLength = radius * 0.48f
+            val hAngle = ((hour % 12 + minute / 60f) * 30f - 90f) * (PI.toFloat() / 180f)
+            val hLen = r * 0.48f
             drawLine(
                 color = BraunCharcoal,
-                start = center,
-                end = Offset(
-                    (center.x + hourLength * cos(hourAngle)).toFloat(),
-                    (center.y + hourLength * sin(hourAngle)).toFloat()
-                ),
+                start = Offset(cX, cY),
+                end = Offset(cX + hLen * cos(hAngle), cY + hLen * sin(hAngle)),
                 strokeWidth = 6.dp.toPx(),
                 cap = StrokeCap.Round
             )
 
             // Yelkovan İbresi
-            val minuteAngle = (minute * 6f - 90f) * (PI / 180f)
-            val minuteLength = radius * 0.72f
+            val mAngle = (minute * 6f - 90f) * (PI.toFloat() / 180f)
+            val mLen = r * 0.72f
             drawLine(
                 color = BraunCharcoal,
-                start = center,
-                end = Offset(
-                    (center.x + minuteLength * cos(minuteAngle)).toFloat(),
-                    (center.y + minuteLength * sin(minuteAngle)).toFloat()
-                ),
+                start = Offset(cX, cY),
+                end = Offset(cX + mLen * cos(mAngle), cY + mLen * sin(mAngle)),
                 strokeWidth = 4.dp.toPx(),
                 cap = StrokeCap.Round
             )
 
-            // Dieter Rams Turuncu Saniye İbresi / Alarm Vurgusu
-            val secondAngle = -45f * (PI / 180f)
-            val secondLength = radius * 0.76f
+            // Dieter Rams Turuncu Saniye İbresi
+            val sAngle = -45f * (PI.toFloat() / 180f)
+            val sLen = r * 0.76f
             drawLine(
                 color = BraunOrange,
-                start = center,
-                end = Offset(
-                    (center.x + secondLength * cos(secondAngle)).toFloat(),
-                    (center.y + secondLength * sin(secondAngle)).toFloat()
-                ),
+                start = Offset(cX, cY),
+                end = Offset(cX + sLen * cos(sAngle), cY + sLen * sin(sAngle)),
                 strokeWidth = 2.dp.toPx(),
                 cap = StrokeCap.Round
             )
 
-            // Merkez pim
-            drawCircle(color = BraunOrange, radius = 5.dp.toPx(), center = center)
-            drawCircle(color = BraunCharcoal, radius = 2.dp.toPx(), center = center)
+            // Merkez Pimler
+            drawCircle(color = BraunOrange, radius = 5.dp.toPx(), center = Offset(cX, cY))
+            drawCircle(color = BraunCharcoal, radius = 2.dp.toPx(), center = Offset(cX, cY))
         }
 
-        // Kadranın ortasında veya altında durum ibaresi
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(top = 90.dp)

@@ -17,7 +17,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,17 +27,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,19 +64,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ouz.saatpro.alarm.AlarmScheduler
 import com.ouz.saatpro.data.AlarmPreferences
-import com.ouz.saatpro.ui.ControlTile
-import com.ouz.saatpro.ui.HeroStateButton
-import com.ouz.saatpro.ui.StatusCard
-import com.ouz.saatpro.ui.theme.AccentPrimary
-import com.ouz.saatpro.ui.theme.AccentPrimaryGradient
-import com.ouz.saatpro.ui.theme.CardBorder
-import com.ouz.saatpro.ui.theme.CardDark
+import com.ouz.saatpro.ui.RamsClockDialButton
+import com.ouz.saatpro.ui.RamsControlTile
+import com.ouz.saatpro.ui.RamsStatusPill
+import com.ouz.saatpro.ui.theme.BraunCard
+import com.ouz.saatpro.ui.theme.BraunCharcoal
+import com.ouz.saatpro.ui.theme.BraunGreen
+import com.ouz.saatpro.ui.theme.BraunOffWhite
+import com.ouz.saatpro.ui.theme.BraunOrange
+import com.ouz.saatpro.ui.theme.BraunSubText
 import com.ouz.saatpro.ui.theme.SaatProTheme
-import com.ouz.saatpro.ui.theme.SurfaceDark
-import com.ouz.saatpro.ui.theme.SurfaceOverlay
-import com.ouz.saatpro.ui.theme.TextMuted
-import com.ouz.saatpro.ui.theme.TextPrimary
-import com.ouz.saatpro.ui.theme.TextSecondary
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -113,7 +107,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Samsung / Android Kısıtlanmamış Pil İzni
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
             try {
@@ -127,7 +120,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Android 10+ Kilit Ekranının Üzerine Çıkma (Overlay) İzni
         if (!Settings.canDrawOverlays(this)) {
             try {
                 val intent = Intent(
@@ -184,7 +176,7 @@ fun MainScreen(context: Context) {
     }
 
     Scaffold(
-        containerColor = SurfaceDark
+        containerColor = BraunOffWhite
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -195,14 +187,14 @@ fun MainScreen(context: Context) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // 1. ÜST: DURUM KARTI (Tıklanınca Gelecek Alarmlar Listesi Açılır)
+            // 1. ÜST: STATUS CARD (Braun Pill)
             val statusTitle = if (isAlarmActive) "Döngü Devrede" else "Alarm Kapalı"
             val statusSub = if (isAlarmActive && nextTriggerMillis > 0L) {
                 fullDateFormat.format(Date(nextTriggerMillis))
             } else {
                 "Başlatmak için dokunun"
             }
-            StatusCard(
+            RamsStatusPill(
                 title = statusTitle,
                 subtitle = statusSub,
                 isActive = isAlarmActive,
@@ -215,18 +207,17 @@ fun MainScreen(context: Context) {
                 }
             )
 
-            // 2. ÜST PARAMETRELER: Tarih & Saat Seçicileri
+            // 2. ÜST PARAMETRELER: Tarih & Saat
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Başlangıç Tarihi (Takvim)
                 val cal = Calendar.getInstance().apply {
                     set(targetYear, targetMonth, targetDay)
                 }
-                ControlTile(
-                    icon = Icons.Default.DateRange,
-                    label = "BAŞLANGIÇ",
+                RamsControlTile(
+                    icon = Icons.Default.CalendarMonth,
+                    label = "Başlangıç",
                     value = shortDateFormat.format(cal.time),
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -251,11 +242,10 @@ fun MainScreen(context: Context) {
                     }
                 )
 
-                // Saat
                 val timeStr = String.format(Locale.getDefault(), "%02d:%02d", targetHour, targetMinute)
-                ControlTile(
+                RamsControlTile(
                     icon = Icons.Default.AccessTime,
-                    label = "SAAT",
+                    label = "Saat",
                     value = timeStr,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -279,15 +269,16 @@ fun MainScreen(context: Context) {
                 )
             }
 
-            // 3. MERKEZ: HERO BUTON (Start / Aktif)
-            HeroStateButton(
+            // 3. MERKEZ: LOGODAKİ DIETER RAMS ANALOG KADRAN BUTONU
+            RamsClockDialButton(
+                hour = targetHour,
+                minute = targetMinute,
                 isActive = isAlarmActive,
-                size = 230.dp,
-                activeGradient = AccentPrimaryGradient,
+                size = 250.dp,
                 onClick = {
                     if (isAlarmActive) {
                         scheduler.cancelRoutine()
-                        Toast.makeText(context, "Alarm döngüsü durduruldu", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Döngü durduruldu", Toast.LENGTH_SHORT).show()
                     } else {
                         scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, intervalHours)
                         Toast.makeText(context, "Döngü başlatıldı", Toast.LENGTH_SHORT).show()
@@ -296,24 +287,22 @@ fun MainScreen(context: Context) {
                 }
             )
 
-            // 4. ALT PARAMETRELER: Tekrar Aralığı & Ses Seçimi
+            // 4. ALT PARAMETRELER: Aralık & Zil Sesi
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Periyot Seçimi
-                ControlTile(
+                RamsControlTile(
                     icon = Icons.Default.Loop,
-                    label = "TEKRAR ARALIĞI",
+                    label = "Aralık",
                     value = "$intervalHours Saat",
                     modifier = Modifier.weight(1f),
                     onClick = { showIntervalDialog = true }
                 )
 
-                // Ses Seçimi
-                ControlTile(
+                RamsControlTile(
                     icon = Icons.Default.GraphicEq,
-                    label = "ZİL SESİ",
+                    label = "Zil Sesi",
                     value = ringtoneTitle,
                     modifier = Modifier.weight(1f),
                     onClick = { showRingtoneDialog = true }
@@ -322,13 +311,13 @@ fun MainScreen(context: Context) {
         }
     }
 
-    // 1. ARALIK AYARLAMA DİYALOĞU
+    // ARALIK SEÇİCİ DİYALOG
     if (showIntervalDialog) {
         var customInput by remember { mutableStateOf(intervalHours.toString()) }
         AlertDialog(
             onDismissRequest = { showIntervalDialog = false },
-            containerColor = CardDark,
-            title = { Text("Tekrar Aralığı (Saat)", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            containerColor = BraunCard,
+            title = { Text("Tekrar Aralığı (Saat)", color = BraunCharcoal, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(
@@ -339,8 +328,8 @@ fun MainScreen(context: Context) {
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (intervalHours == h) AccentPrimary else SurfaceOverlay)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (intervalHours == h) BraunCharcoal else BraunOffWhite)
                                     .clickable {
                                         intervalHours = h
                                         preferences.intervalHours = h
@@ -355,7 +344,7 @@ fun MainScreen(context: Context) {
                             ) {
                                 Text(
                                     text = "${h}s",
-                                    color = if (intervalHours == h) SurfaceDark else TextPrimary,
+                                    color = if (intervalHours == h) Color.White else BraunCharcoal,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -367,7 +356,7 @@ fun MainScreen(context: Context) {
                     OutlinedTextField(
                         value = customInput,
                         onValueChange = { customInput = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("Özel Saat Değeri", color = TextSecondary) },
+                        label = { Text("Özel Saat Değeri", color = BraunSubText) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
@@ -388,20 +377,20 @@ fun MainScreen(context: Context) {
                         }
                         showIntervalDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = BraunCharcoal)
                 ) {
-                    Text("Kaydet", color = SurfaceDark, fontWeight = FontWeight.Bold)
+                    Text("Kaydet", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showIntervalDialog = false }) {
-                    Text("İptal", color = TextSecondary)
+                    Text("İptal", color = BraunSubText)
                 }
             }
         )
     }
 
-    // 2. SES SEÇİCİ DİYALOĞU
+    // ZİL SESİ DİYALOG
     if (showRingtoneDialog) {
         val ringtones = remember {
             val list = mutableListOf<RingtoneItem>()
@@ -424,15 +413,15 @@ fun MainScreen(context: Context) {
 
         AlertDialog(
             onDismissRequest = { showRingtoneDialog = false },
-            containerColor = CardDark,
-            title = { Text("Alarm Sesi Seçin", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            containerColor = BraunCard,
+            title = { Text("Zil Sesi", color = BraunCharcoal, fontWeight = FontWeight.Bold) },
             text = {
                 LazyColumn(modifier = Modifier.height(280.dp)) {
                     items(ringtones) { item ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable {
                                     ringtoneTitle = item.title
                                     preferences.ringtoneTitle = item.title
@@ -445,13 +434,13 @@ fun MainScreen(context: Context) {
                         ) {
                             Text(
                                 text = item.title,
-                                color = if (ringtoneTitle == item.title) AccentPrimary else TextPrimary,
+                                color = if (ringtoneTitle == item.title) BraunOrange else BraunCharcoal,
                                 fontSize = 15.sp,
                                 fontWeight = if (ringtoneTitle == item.title) FontWeight.Bold else FontWeight.Normal,
                                 modifier = Modifier.weight(1f)
                             )
                             if (ringtoneTitle == item.title) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = AccentPrimary)
+                                Icon(Icons.Default.Check, contentDescription = null, tint = BraunOrange)
                             }
                         }
                     }
@@ -460,13 +449,13 @@ fun MainScreen(context: Context) {
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showRingtoneDialog = false }) {
-                    Text("Kapat", color = TextSecondary)
+                    Text("Kapat", color = BraunSubText)
                 }
             }
         )
     }
 
-    // 3. GELECEK DÖNGÜ TAKVİMİ / LİSTESİ DİYALOĞU
+    // TAKVİM LİSTESİ DİYALOG
     if (showScheduleListDialog) {
         val upcomingAlarms = remember(nextTriggerMillis, intervalHours) {
             val list = mutableListOf<String>()
@@ -482,19 +471,19 @@ fun MainScreen(context: Context) {
 
         AlertDialog(
             onDismissRequest = { showScheduleListDialog = false },
-            containerColor = CardDark,
-            title = { Text("Planlanan Alarm Takvimi", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            containerColor = BraunCard,
+            title = { Text("Planlanan Alarm Takvimi", color = BraunCharcoal, fontWeight = FontWeight.Bold) },
             text = {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(upcomingAlarms) { alarmText ->
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SurfaceOverlay)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(BraunOffWhite)
                                 .padding(12.dp)
                         ) {
-                            Text(text = alarmText, color = TextPrimary, fontSize = 13.sp)
+                            Text(text = alarmText, color = BraunCharcoal, fontSize = 13.sp)
                         }
                     }
                 }
@@ -502,9 +491,9 @@ fun MainScreen(context: Context) {
             confirmButton = {
                 Button(
                     onClick = { showScheduleListDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = BraunCharcoal)
                 ) {
-                    Text("Tamam", color = SurfaceDark, fontWeight = FontWeight.Bold)
+                    Text("Tamam", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         )

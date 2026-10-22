@@ -1,19 +1,11 @@
 package com.ouz.saatpro
 
-import android.app.KeyguardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,12 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -42,10 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ouz.saatpro.alarm.AlarmService
-import com.ouz.saatpro.ui.theme.AccentDestructive
-import com.ouz.saatpro.ui.theme.AccentDestructiveGradient
-import com.ouz.saatpro.ui.theme.SurfaceDark
-import com.ouz.saatpro.ui.theme.TextMuted
+import com.ouz.saatpro.ui.theme.BraunBezelDark
+import com.ouz.saatpro.ui.theme.BraunCharcoal
+import com.ouz.saatpro.ui.theme.BraunOffWhite
+import com.ouz.saatpro.ui.theme.BraunOrange
+import com.ouz.saatpro.ui.theme.BraunSubText
 
 class AlarmActivity : ComponentActivity() {
 
@@ -72,8 +63,6 @@ class AlarmActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-            keyguardManager?.requestDismissKeyguard(this, null)
         }
 
         window.addFlags(
@@ -96,21 +85,10 @@ class AlarmActivity : ComponentActivity() {
 
 @Composable
 fun AlarmRingingScreen(onStopClicked: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SurfaceDark)
+            .background(BraunOffWhite)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -119,33 +97,33 @@ fun AlarmRingingScreen(onStopClicked: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "ALARM ÇALIYOR",
-                color = AccentDestructive,
+                text = "ALARM",
+                color = BraunCharcoal,
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp,
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Döngüyü aksatmadan susturmak için dokunun",
-                color = TextMuted,
-                fontSize = 14.sp,
+                text = "Döngüyü durdurmak için dokunun",
+                color = BraunSubText,
+                fontSize = 15.sp,
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(64.dp))
 
+            // Braun / Dieter Rams tarzı ikonik turuncu buton
             Box(
                 modifier = Modifier
-                    .size(260.dp)
-                    .scale(pulseScale)
-                    .shadow(32.dp, CircleShape, ambientColor = AccentDestructive, spotColor = AccentDestructive)
+                    .size(240.dp)
+                    .shadow(12.dp, CircleShape, spotColor = Color(0x40000000))
                     .clip(CircleShape)
-                    .background(AccentDestructiveGradient)
-                    .border(3.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    .background(BraunOrange)
+                    .border(6.dp, BraunBezelDark, CircleShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -156,9 +134,9 @@ fun AlarmRingingScreen(onStopClicked: () -> Unit) {
                 Text(
                     text = "DURDUR",
                     color = Color.White,
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 3.sp
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
                 )
             }
         }

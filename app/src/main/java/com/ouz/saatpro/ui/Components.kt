@@ -1,11 +1,6 @@
 package com.ouz.saatpro.ui
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,32 +23,35 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ouz.saatpro.ui.theme.AccentPrimary
-import com.ouz.saatpro.ui.theme.CardBorder
-import com.ouz.saatpro.ui.theme.CardDark
-import com.ouz.saatpro.ui.theme.IdleCircleGradient
-import com.ouz.saatpro.ui.theme.SurfaceOverlay
-import com.ouz.saatpro.ui.theme.TextMuted
-import com.ouz.saatpro.ui.theme.TextPrimary
-import com.ouz.saatpro.ui.theme.TextSecondary
+import com.ouz.saatpro.ui.theme.BraunBezelDark
+import com.ouz.saatpro.ui.theme.BraunBorder
+import com.ouz.saatpro.ui.theme.BraunCard
+import com.ouz.saatpro.ui.theme.BraunCharcoal
+import com.ouz.saatpro.ui.theme.BraunDialBg
+import com.ouz.saatpro.ui.theme.BraunGreen
+import com.ouz.saatpro.ui.theme.BraunOrange
+import com.ouz.saatpro.ui.theme.BraunSubText
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
-fun StatusCard(
+fun RamsStatusPill(
     title: String,
     subtitle: String,
     isActive: Boolean,
@@ -61,45 +60,54 @@ fun StatusCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(CardDark)
-            .border(1.dp, if (isActive) AccentPrimary.copy(alpha = 0.5f) else CardBorder, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(BraunCard)
+            .border(1.dp, BraunBorder, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 18.dp)
+            .padding(horizontal = 20.dp, vertical = 14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title.uppercase(),
-                    color = if (isActive) AccentPrimary else TextMuted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Braun tarzı küçük durum lambası
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(if (isActive) BraunGreen else BraunSubText.copy(alpha = 0.5f))
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subtitle,
-                    color = TextPrimary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = title.uppercase(),
+                        color = BraunSubText,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        text = subtitle,
+                        color = BraunCharcoal,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = TextSecondary,
-                modifier = Modifier.size(20.dp)
+                tint = BraunSubText,
+                modifier = Modifier.size(18.dp)
             )
         }
     }
 }
 
 @Composable
-fun ControlTile(
+fun RamsControlTile(
     icon: ImageVector,
     label: String,
     value: String,
@@ -108,38 +116,37 @@ fun ControlTile(
 ) {
     Box(
         modifier = modifier
-            .height(84.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(CardDark)
-            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .height(82.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(BraunCard)
+            .border(1.dp, BraunBorder, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(14.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(16.dp)
+                    tint = BraunSubText,
+                    modifier = Modifier.size(15.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = label,
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+                    text = label.uppercase(),
+                    color = BraunSubText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
             }
             Text(
                 text = value,
-                color = TextPrimary,
-                fontSize = 16.sp,
+                color = BraunCharcoal,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
             )
@@ -148,40 +155,20 @@ fun ControlTile(
 }
 
 @Composable
-fun HeroStateButton(
+fun RamsClockDialButton(
+    hour: Int,
+    minute: Int,
     isActive: Boolean,
-    size: Dp = 230.dp,
-    activeGradient: Brush,
+    size: Dp = 250.dp,
     onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isActive) 1.04f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
     Box(
         modifier = Modifier
             .size(size)
-            .scale(pulseScale)
-            .shadow(
-                elevation = if (isActive) 24.dp else 8.dp,
-                shape = CircleShape,
-                ambientColor = if (isActive) AccentPrimary else Color.Transparent,
-                spotColor = if (isActive) AccentPrimary else Color.Transparent
-            )
+            .shadow(6.dp, CircleShape, spotColor = Color(0x33000000))
             .clip(CircleShape)
-            .background(if (isActive) activeGradient else IdleCircleGradient)
-            .border(
-                width = 2.dp,
-                color = if (isActive) Color.White.copy(alpha = 0.3f) else CardBorder,
-                shape = CircleShape
-            )
+            .background(BraunDialBg)
+            .border(8.dp, BraunBezelDark, CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -189,23 +176,102 @@ fun HeroStateButton(
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Logodaki analog saat kadranı ve minimalist çizgiler
+        Canvas(modifier = Modifier.fillMaxSize().padding(14.dp)) {
+            val center = Offset(size.width / 2, size.height / 2)
+            val radius = size.width / 2
+
+            // Kadran çizgileri (12 ana ve ara çizgiler)
+            for (i in 0 until 60) {
+                val angle = (i * 6) * (PI / 180f)
+                val isHour = i % 5 == 0
+                val lineLength = if (isHour) 14.dp.toPx() else 6.dp.toPx()
+                val strokeWidth = if (isHour) 2.5.dp.toPx() else 1.dp.toPx()
+                val lineColor = if (isHour) BraunCharcoal else BraunSubText.copy(alpha = 0.6f)
+
+                val start = Offset(
+                    x = (center.x + (radius - lineLength) * cos(angle)).toFloat(),
+                    y = (center.y + (radius - lineLength) * sin(angle)).toFloat()
+                )
+                val end = Offset(
+                    x = (center.x + radius * cos(angle)).toFloat(),
+                    y = (center.y + radius * sin(angle)).toFloat()
+                )
+                drawLine(
+                    color = lineColor,
+                    start = start,
+                    end = end,
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
+                )
+            }
+
+            // Saat İbresi
+            val hourAngle = ((hour % 12 + minute / 60f) * 30f - 90f) * (PI / 180f)
+            val hourLength = radius * 0.48f
+            drawLine(
+                color = BraunCharcoal,
+                start = center,
+                end = Offset(
+                    (center.x + hourLength * cos(hourAngle)).toFloat(),
+                    (center.y + hourLength * sin(hourAngle)).toFloat()
+                ),
+                strokeWidth = 6.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+
+            // Yelkovan İbresi
+            val minuteAngle = (minute * 6f - 90f) * (PI / 180f)
+            val minuteLength = radius * 0.72f
+            drawLine(
+                color = BraunCharcoal,
+                start = center,
+                end = Offset(
+                    (center.x + minuteLength * cos(minuteAngle)).toFloat(),
+                    (center.y + minuteLength * sin(minuteAngle)).toFloat()
+                ),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+
+            // Dieter Rams Turuncu Saniye İbresi / Alarm Vurgusu
+            val secondAngle = -45f * (PI / 180f)
+            val secondLength = radius * 0.76f
+            drawLine(
+                color = BraunOrange,
+                start = center,
+                end = Offset(
+                    (center.x + secondLength * cos(secondAngle)).toFloat(),
+                    (center.y + secondLength * sin(secondAngle)).toFloat()
+                ),
+                strokeWidth = 2.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+
+            // Merkez pim
+            drawCircle(color = BraunOrange, radius = 5.dp.toPx(), center = center)
+            drawCircle(color = BraunCharcoal, radius = 2.dp.toPx(), center = center)
+        }
+
+        // Kadranın ortasında veya altında durum ibaresi
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 90.dp)
         ) {
-            Text(
-                text = if (isActive) "AKTİF" else "BAŞLAT",
-                color = if (isActive) Color.White else TextPrimary,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (isActive) "Durdurmak İçin Dokun" else "Döngüyü Başlat",
-                color = if (isActive) Color.White.copy(alpha = 0.8f) else TextMuted,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (isActive) BraunGreen else BraunCharcoal)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = if (isActive) "AKTİF" else "BAŞLAT",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
         }
     }
 }

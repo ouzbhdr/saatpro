@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -31,13 +32,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Kilit ekranı üzerinde ve arka planda anında tam ekran açılma yetkileri -->
         <activity
             android:name=".AlarmActivity"
-            android:exported="false"
+            android:exported="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
+            android:showOnLockScreen="true"
             android:screenOrientation="portrait"
             android:excludeFromRecents="true"
+            android:taskAffinity=""
             android:launchMode="singleInstance" />
 
         <service
@@ -47,7 +51,7 @@
 
         <receiver
             android:name=".alarm.AlarmReceiver"
-            android:exported="false" />
+            android:exported="true" />
 
         <receiver
             android:name=".alarm.BootReceiver"

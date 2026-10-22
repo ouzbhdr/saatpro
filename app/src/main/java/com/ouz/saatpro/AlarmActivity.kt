@@ -1,5 +1,7 @@
 package com.ouz.saatpro
 
+import android.app.KeyguardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -44,7 +46,6 @@ import com.ouz.saatpro.ui.theme.AccentDestructive
 import com.ouz.saatpro.ui.theme.AccentDestructiveGradient
 import com.ouz.saatpro.ui.theme.SurfaceDark
 import com.ouz.saatpro.ui.theme.TextMuted
-import com.ouz.saatpro.ui.theme.TextPrimary
 
 class AlarmActivity : ComponentActivity() {
 
@@ -61,20 +62,26 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        wakeAndUnlockScreen()
+    }
+
+    @Suppress("DEPRECATION")
     private fun wakeAndUnlockScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-        } else {
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-            )
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+            keyguardManager?.requestDismissKeyguard(this, null)
         }
+
         window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
         )
     }
 
@@ -123,7 +130,7 @@ fun AlarmRingingScreen(onStopClicked: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Döngüyü aksatmadan susturmak için butona dokunun",
+                text = "Döngüyü aksatmadan susturmak için dokunun",
                 color = TextMuted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center

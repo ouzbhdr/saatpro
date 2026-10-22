@@ -26,7 +26,7 @@ class AlarmService : Service() {
     private var vibrator: Vibrator? = null
 
     companion object {
-        const val CHANNEL_ID = "saat_pro_alarm_channel_v2"
+        const val CHANNEL_ID = "saat_pro_alarm_channel_v3"
         const val NOTIFICATION_ID = 2001
         const val ACTION_START_ALARM = "com.ouz.saatpro.ACTION_START_ALARM"
         const val ACTION_STOP_ALARM = "com.ouz.saatpro.ACTION_STOP_ALARM"
@@ -44,15 +44,20 @@ class AlarmService : Service() {
                 playAlarmSound()
                 startVibration()
 
-                // Ekran kapalıysa doğrudan AlarmActivity'yi ayağa kaldır
-                val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    )
+                // Xiaomi/Poco ve Samsung için ekstra önlem: Servisten de Activity'yi ayağa kaldır
+                try {
+                    val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        )
+                    }
+                    startActivity(fullScreenIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                startActivity(fullScreenIntent)
             }
             ACTION_STOP_ALARM -> {
                 stopAlarmAndSelf()
@@ -65,13 +70,14 @@ class AlarmService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Alarm Bildirimleri",
+                "Kritik Alarm Bildirimi",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Planlanan periyodik alarmlar"
+                description = "Kilit ekranını açan tam ekran alarmlar"
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 enableVibration(true)
+                setSound(null, null) // Sesi MediaPlayer yönetiyor
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -82,6 +88,7 @@ class AlarmService : Service() {
         val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val fullScreenPendingIntent = PendingIntent.getActivity(
@@ -99,6 +106,7 @@ class AlarmService : Service() {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setContentIntent(fullScreenPendingIntent)
             .setOngoing(true)
             .setAutoCancel(false)
             .build()

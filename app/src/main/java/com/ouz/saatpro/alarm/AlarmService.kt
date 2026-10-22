@@ -18,6 +18,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.ouz.saatpro.AlarmActivity
+import com.ouz.saatpro.data.AlarmPreferences
 
 class AlarmService : Service() {
 
@@ -25,7 +26,7 @@ class AlarmService : Service() {
     private var vibrator: Vibrator? = null
 
     companion object {
-        const val CHANNEL_ID = "saat_pro_alarm_channel"
+        const val CHANNEL_ID = "saat_pro_alarm_channel_v2"
         const val NOTIFICATION_ID = 2001
         const val ACTION_START_ALARM = "com.ouz.saatpro.ACTION_START_ALARM"
         const val ACTION_STOP_ALARM = "com.ouz.saatpro.ACTION_STOP_ALARM"
@@ -42,6 +43,16 @@ class AlarmService : Service() {
                 startForeground(NOTIFICATION_ID, buildAlarmNotification())
                 playAlarmSound()
                 startVibration()
+
+                // Ekran kapalıysa doğrudan AlarmActivity'yi ayağa kaldır
+                val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
+                }
+                startActivity(fullScreenIntent)
             }
             ACTION_STOP_ALARM -> {
                 stopAlarmAndSelf()
@@ -54,10 +65,10 @@ class AlarmService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Vitamin Alarm Bildirimi",
+                "Alarm Bildirimleri",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "48 saatlik döngü acil alarm bildirimleri"
+                description = "Planlanan periyodik alarmlar"
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 enableVibration(true)
@@ -82,8 +93,8 @@ class AlarmService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("VİTAMİN VAKTİ GELDİ!")
-            .setContentText("Alarm çalıyor, lütfen vitamini alıp durdurun.")
+            .setContentTitle("ALARM ÇALIYOR")
+            .setContentText("Kapatmak için dokunun")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -95,12 +106,14 @@ class AlarmService : Service() {
 
     private fun playAlarmSound() {
         try {
-            var alertUri: Uri? = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            if (alertUri == null) {
-                alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-            }
-            if (alertUri == null) {
-                alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val prefs = AlarmPreferences(this)
+            val ringtoneUriString = prefs.ringtoneUri
+            var alertUri: Uri? = if (ringtoneUriString.isNotEmpty()) {
+                Uri.parse(ringtoneUriString)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             }
 
             mediaPlayer = MediaPlayer().apply {

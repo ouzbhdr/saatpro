@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.provider.Settings
 import com.ouz.saatpro.data.AlarmPreferences
 import java.util.Calendar
 
@@ -18,36 +17,39 @@ class AlarmScheduler(private val context: Context) {
         const val ACTION_TRIGGER_ALARM = "com.ouz.saatpro.ACTION_TRIGGER_ALARM"
     }
 
-    fun canScheduleExactAlarms(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
-        }
-    }
-
-    /**
-     * Döngüyü belirlenen saat ve dakikadan itibaren başlatır.
-     */
-    fun startRoutine(hour: Int, minute: Int, intervalHours: Int = 48) {
+    fun startRoutine(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        intervalHours: Int
+    ) {
         val calendar = Calendar.getInstance().apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month)
+            set(Calendar.DAY_OF_MONTH, day)
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
 
-        // Eğer seçilen saat geçmişse bir sonraki periyota at
-        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+        // Eğer seçilen tarih geçmişte kaldıysa bir periyot ekle
+        while (calendar.timeInMillis <= System.currentTimeMillis()) {
             calendar.add(Calendar.HOUR_OF_DAY, intervalHours)
         }
 
-        scheduleAtTime(calendar.timeInMillis, hour, minute, intervalHours)
+        preferences.targetYear = year
+        preferences.targetMonth = month
+        preferences.targetDay = day
+        preferences.targetHour = hour
+        preferences.targetMinute = minute
+        preferences.intervalHours = intervalHours
+
+        scheduleAtTime(calendar.timeInMillis)
     }
 
-    /**
-     * Alarm çaldığında veya durdurulduğunda bir sonraki döngüyü kesintisiz kurar.
-     */
     fun scheduleNextOccurrence() {
         val intervalMillis = preferences.intervalHours * 60 * 60 * 1000L
         val baseTime = if (preferences.nextTriggerMillis > 0L) {
@@ -56,20 +58,11 @@ class AlarmScheduler(private val context: Context) {
             System.currentTimeMillis()
         }
         val nextTime = baseTime + intervalMillis
-
-        scheduleAtTime(
-            triggerMillis = nextTime,
-            hour = preferences.targetHour,
-            minute = preferences.targetMinute,
-            intervalHours = preferences.intervalHours
-        )
+        scheduleAtTime(nextTime)
     }
 
-    private fun scheduleAtTime(triggerMillis: Long, hour: Int, minute: Int, intervalHours: Int) {
+    private fun scheduleAtTime(triggerMillis: Long) {
         preferences.isAlarmActive = true
-        preferences.targetHour = hour
-        preferences.targetMinute = minute
-        preferences.intervalHours = intervalHours
         preferences.nextTriggerMillis = triggerMillis
 
         val intent = Intent(context, AlarmReceiver::class.java).apply {
@@ -82,7 +75,6 @@ class AlarmScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Doze modunu delen ve kilit ekranını uyandıran en kritik çağrı
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerMillis,

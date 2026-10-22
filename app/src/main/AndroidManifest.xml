@@ -1,20 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Tam zamanında alarm kurma (Android 12 & 14) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
-    <!-- Kilit ekranı delme ve ekranı uyandırma -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <!-- Arka plan ses servisi (Android 14 MediaPlayback) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-
-    <!-- Bildirim ve Cihaz Yeniden Başlatma -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -37,27 +31,24 @@
             </intent-filter>
         </activity>
 
-        <!-- Kilit ekranı üzerinde çalan acil alarm ekranı -->
         <activity
             android:name=".AlarmActivity"
             android:exported="false"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:screenOrientation="portrait"
-            android:launchMode="singleTop" />
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance" />
 
-        <!-- Servis: Çalma ve Titreşim -->
         <service
             android:name=".alarm.AlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
-        <!-- Alarm Tetikleyici -->
         <receiver
             android:name=".alarm.AlarmReceiver"
             android:exported="false" />
 
-        <!-- Cihaz Açıldığında Döngüyü Kurtaran Alıcı -->
         <receiver
             android:name=".alarm.BootReceiver"
             android:exported="true"

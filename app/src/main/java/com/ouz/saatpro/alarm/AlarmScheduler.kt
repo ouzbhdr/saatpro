@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import com.ouz.saatpro.AlarmActivity
 import com.ouz.saatpro.data.AlarmPreferences
 import java.util.Calendar
 
@@ -38,7 +39,6 @@ class AlarmScheduler(private val context: Context) {
         val totalIntervalMinutes = (intervalHours * 60) + intervalMinutes
         val stepMinutes = if (totalIntervalMinutes > 0) totalIntervalMinutes else 48 * 60
 
-        // Eğer seçilen zaman geçmişte kaldıysa bir periyot ekle
         while (calendar.timeInMillis <= System.currentTimeMillis()) {
             calendar.add(Calendar.MINUTE, stepMinutes)
         }
@@ -69,36 +69,48 @@ class AlarmScheduler(private val context: Context) {
         preferences.isAlarmActive = true
         preferences.nextTriggerMillis = triggerMillis
 
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
+        // 1. Alarm çaldığında doğrudan tetiklenecek Receiver intenti
+        val receiverIntent = Intent(context, AlarmReceiver::class.java).apply {
             action = ACTION_TRIGGER_ALARM
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val operationIntent = PendingIntent.getBroadcast(
             context,
             ALARM_REQUEST_CODE,
-            intent,
+            receiverIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerMillis,
-            pendingIntent
+        // 2. Sistem kilit ekranındayken gösterilecek tam ekran intenti
+        val showIntent = Intent(context, AlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        }
+        val showPendingIntent = PendingIntent.getActivity(
+            context,
+            ALARM_REQUEST_CODE + 1,
+            showIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        // Android'in yerel alarm mimarisi: AlarmClockInfo tüm arka plan engellerini deler
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerMillis, showPendingIntent)
+        alarmManager.setAlarmClock(alarmClockInfo, operationIntent)
     }
 
     fun cancelRoutine() {
         preferences.isAlarmActive = false
         preferences.nextTriggerMillis = 0L
 
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
+        val receiverIntent = Intent(context, AlarmReceiver::class.java).apply {
             action = ACTION_TRIGGER_ALARM
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val operationIntent = PendingIntent.getBroadcast(
             context,
             ALARM_REQUEST_CODE,
-            intent,
+            receiverIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        alarmManager.cancel(pendingIntent)
+        alarmManager.cancel(operationIntent)
     }
 }

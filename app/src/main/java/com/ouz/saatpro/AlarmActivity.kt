@@ -1,8 +1,17 @@
 package com.ouz.saatpro
 
+import android.app.KeyguardManager
+import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ouz.saatpro.alarm.AlarmService
+import com.ouz.saatpro.data.AlarmPreferences
 import com.ouz.saatpro.ui.theme.BraunBezelDark
 import com.ouz.saatpro.ui.theme.BraunCharcoal
 import com.ouz.saatpro.ui.theme.BraunOffWhite
@@ -40,9 +50,15 @@ import com.ouz.saatpro.ui.theme.BraunSubText
 
 class AlarmActivity : ComponentActivity() {
 
+    private var localMediaPlayer: MediaPlayer? = null
+    private var localVibrator: Vibrator? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        showOnScreenAndDismissKeyguard()
         super.onCreate(savedInstanceState)
-        wakeAndUnlockScreen()
+
+        // Ses ve titreşimi doğrudan aktivite üstünden başlat
+        startRingtoneAndVibration()
 
         setContent {
             AlarmRingingScreen(
@@ -55,14 +71,16 @@ class AlarmActivity : ComponentActivity() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        wakeAndUnlockScreen()
+        showOnScreenAndDismissKeyguard()
     }
 
     @Suppress("DEPRECATION")
-    private fun wakeAndUnlockScreen() {
+    private fun showOnScreenAndDismissKeyguard() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+            keyguardManager?.requestDismissKeyguard(this, null)
         }
 
         window.addFlags(
@@ -74,12 +92,76 @@ class AlarmActivity : ComponentActivity() {
         )
     }
 
+    private fun startRingtoneAndVibration() {
+        try {
+            val prefs = AlarmPreferences(this)
+            val ringtoneUriString = prefs.ringtoneUri
+            var alertUri: Uri? = if (ringtoneUriString.isNotEmpty()) {
+                Uri.parse(ringtoneUriString)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            }
+
+            localMediaPlayer = MediaPlayer().apply {
+                setDataSource(applicationContext, alertUri!!)
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                isLooping = true
+                prepare()
+                start()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        try {
+            localVibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+
+            val pattern = longArrayOf(0, 1000, 500, 1000, 500)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                localVibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+            } else {
+                @Suppress("DEPRECATION")
+                localVibrator?.vibrate(pattern, 0)
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun stopAlarmAndDismiss() {
+        // Yerel ses ve titreşimi kapat
+        localMediaPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.release()
+            localMediaPlayer = null
+        }
+        localVibrator?.cancel()
+
+        // Servise de durdurma emri gönder
         val stopIntent = Intent(this, AlarmService::class.java).apply {
             action = AlarmService.ACTION_STOP_ALARM
         }
         startService(stopIntent)
+
         finishAffinity()
+    }
+
+    override fun onDestroy() {
+        localMediaPlayer?.release()
+        localMediaPlayer = null
+        localVibrator?.cancel()
+        super.onDestroy()
     }
 }
 
@@ -116,7 +198,6 @@ fun AlarmRingingScreen(onStopClicked: () -> Unit) {
 
             Spacer(modifier = Modifier.height(64.dp))
 
-            // Braun / Dieter Rams tarzı ikonik turuncu buton
             Box(
                 modifier = Modifier
                     .size(240.dp)

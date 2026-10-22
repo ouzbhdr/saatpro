@@ -2,8 +2,6 @@ package com.ouz.saatpro.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.media.RingtoneManager
-import android.net.Uri
 
 class AlarmPreferences(context: Context) {
     private val prefs: SharedPreferences =
@@ -18,6 +16,7 @@ class AlarmPreferences(context: Context) {
         private const val KEY_TARGET_HOUR = "key_target_hour"
         private const val KEY_TARGET_MINUTE = "key_target_minute"
         private const val KEY_INTERVAL_HOURS = "key_interval_hours"
+        private const val KEY_INTERVAL_MINUTES = "key_interval_minutes"
         private const val KEY_NEXT_TRIGGER_MILLIS = "key_next_trigger_millis"
         private const val KEY_RINGTONE_URI = "key_ringtone_uri"
         private const val KEY_RINGTONE_TITLE = "key_ringtone_title"
@@ -50,6 +49,10 @@ class AlarmPreferences(context: Context) {
     var intervalHours: Int
         get() = prefs.getInt(KEY_INTERVAL_HOURS, 48)
         set(value) = prefs.edit().putInt(KEY_INTERVAL_HOURS, value).apply()
+
+    var intervalMinutes: Int
+        get() = prefs.getInt(KEY_INTERVAL_MINUTES, 0)
+        set(value) = prefs.edit().putInt(KEY_INTERVAL_MINUTES, value).apply()
 
     var nextTriggerMillis: Long
         get() = prefs.getLong(KEY_NEXT_TRIGGER_MILLIS, 0L)

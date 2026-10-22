@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.ouz.saatpro.data.AlarmPreferences
 import java.util.Calendar
 
@@ -23,7 +22,8 @@ class AlarmScheduler(private val context: Context) {
         day: Int,
         hour: Int,
         minute: Int,
-        intervalHours: Int
+        intervalHours: Int,
+        intervalMinutes: Int
     ) {
         val calendar = Calendar.getInstance().apply {
             set(Calendar.YEAR, year)
@@ -35,9 +35,12 @@ class AlarmScheduler(private val context: Context) {
             set(Calendar.MILLISECOND, 0)
         }
 
-        // Eğer seçilen tarih geçmişte kaldıysa bir periyot ekle
+        val totalIntervalMinutes = (intervalHours * 60) + intervalMinutes
+        val stepMinutes = if (totalIntervalMinutes > 0) totalIntervalMinutes else 48 * 60
+
+        // Eğer seçilen zaman geçmişte kaldıysa bir periyot ekle
         while (calendar.timeInMillis <= System.currentTimeMillis()) {
-            calendar.add(Calendar.HOUR_OF_DAY, intervalHours)
+            calendar.add(Calendar.MINUTE, stepMinutes)
         }
 
         preferences.targetYear = year
@@ -46,18 +49,19 @@ class AlarmScheduler(private val context: Context) {
         preferences.targetHour = hour
         preferences.targetMinute = minute
         preferences.intervalHours = intervalHours
+        preferences.intervalMinutes = intervalMinutes
 
         scheduleAtTime(calendar.timeInMillis)
     }
 
     fun scheduleNextOccurrence() {
-        val intervalMillis = preferences.intervalHours * 60 * 60 * 1000L
+        val totalIntervalMillis = ((preferences.intervalHours * 60L) + preferences.intervalMinutes) * 60L * 1000L
         val baseTime = if (preferences.nextTriggerMillis > 0L) {
             preferences.nextTriggerMillis
         } else {
             System.currentTimeMillis()
         }
-        val nextTime = baseTime + intervalMillis
+        val nextTime = baseTime + totalIntervalMillis
         scheduleAtTime(nextTime)
     }
 

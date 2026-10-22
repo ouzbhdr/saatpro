@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,12 +65,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ouz.saatpro.alarm.AlarmScheduler
 import com.ouz.saatpro.data.AlarmPreferences
-import com.ouz.saatpro.ui.RamsClockDialButton
 import com.ouz.saatpro.ui.RamsControlTile
+import com.ouz.saatpro.ui.RamsIndustrialPowerButton
 import com.ouz.saatpro.ui.RamsStatusPill
 import com.ouz.saatpro.ui.theme.BraunCard
 import com.ouz.saatpro.ui.theme.BraunCharcoal
-import com.ouz.saatpro.ui.theme.BraunGreen
 import com.ouz.saatpro.ui.theme.BraunOffWhite
 import com.ouz.saatpro.ui.theme.BraunOrange
 import com.ouz.saatpro.ui.theme.BraunSubText
@@ -152,6 +152,7 @@ fun MainScreen(context: Context) {
     var targetHour by remember { mutableIntStateOf(preferences.targetHour) }
     var targetMinute by remember { mutableIntStateOf(preferences.targetMinute) }
     var intervalHours by remember { mutableIntStateOf(preferences.intervalHours) }
+    var intervalMinutes by remember { mutableIntStateOf(preferences.intervalMinutes) }
     var isAlarmActive by remember { mutableStateOf(preferences.isAlarmActive) }
     var nextTriggerMillis by remember { mutableLongStateOf(preferences.nextTriggerMillis) }
     var ringtoneTitle by remember { mutableStateOf(preferences.ringtoneTitle) }
@@ -172,6 +173,7 @@ fun MainScreen(context: Context) {
         targetHour = preferences.targetHour
         targetMinute = preferences.targetMinute
         intervalHours = preferences.intervalHours
+        intervalMinutes = preferences.intervalMinutes
         ringtoneTitle = preferences.ringtoneTitle
     }
 
@@ -187,7 +189,7 @@ fun MainScreen(context: Context) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // 1. ÜST: STATUS CARD (Braun Pill)
+            // 1. ÜST: STATUS CARD
             val statusTitle = if (isAlarmActive) "Döngü Devrede" else "Alarm Kapalı"
             val statusSub = if (isAlarmActive && nextTriggerMillis > 0L) {
                 fullDateFormat.format(Date(nextTriggerMillis))
@@ -231,7 +233,7 @@ fun MainScreen(context: Context) {
                                 preferences.targetMonth = m
                                 preferences.targetDay = d
                                 if (isAlarmActive) {
-                                    scheduler.startRoutine(y, m, d, targetHour, targetMinute, intervalHours)
+                                    scheduler.startRoutine(y, m, d, targetHour, targetMinute, intervalHours, intervalMinutes)
                                     refreshState()
                                 }
                             },
@@ -257,7 +259,7 @@ fun MainScreen(context: Context) {
                                 preferences.targetHour = h
                                 preferences.targetMinute = m
                                 if (isAlarmActive) {
-                                    scheduler.startRoutine(targetYear, targetMonth, targetDay, h, m, intervalHours)
+                                    scheduler.startRoutine(targetYear, targetMonth, targetDay, h, m, intervalHours, intervalMinutes)
                                     refreshState()
                                 }
                             },
@@ -269,33 +271,37 @@ fun MainScreen(context: Context) {
                 )
             }
 
-            // 3. MERKEZ: LOGODAKİ DIETER RAMS ANALOG KADRAN BUTONU
-            RamsClockDialButton(
-                hour = targetHour,
-                minute = targetMinute,
+            // 3. MERKEZ: HAVALI VE KARİZMATİK DIETER RAMS INDUSTRIAL POWER BUTONU
+            RamsIndustrialPowerButton(
                 isActive = isAlarmActive,
-                size = 250.dp,
+                size = 230.dp,
                 onClick = {
                     if (isAlarmActive) {
                         scheduler.cancelRoutine()
                         Toast.makeText(context, "Döngü durduruldu", Toast.LENGTH_SHORT).show()
                     } else {
-                        scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, intervalHours)
+                        scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, intervalHours, intervalMinutes)
                         Toast.makeText(context, "Döngü başlatıldı", Toast.LENGTH_SHORT).show()
                     }
                     refreshState()
                 }
             )
 
-            // 4. ALT PARAMETRELER: Aralık & Zil Sesi
+            // 4. ALT PARAMETRELER: Aralık (Saat + Dakika) & Zil Sesi
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val intervalDisplay = if (intervalMinutes > 0) {
+                    "${intervalHours}s ${intervalMinutes}dk"
+                } else {
+                    "${intervalHours} Saat"
+                }
+
                 RamsControlTile(
                     icon = Icons.Default.Loop,
                     label = "Aralık",
-                    value = "$intervalHours Saat",
+                    value = intervalDisplay,
                     modifier = Modifier.weight(1f),
                     onClick = { showIntervalDialog = true }
                 )
@@ -311,30 +317,38 @@ fun MainScreen(context: Context) {
         }
     }
 
-    // ARALIK SEÇİCİ DİYALOG
+    // ARALIK (SAAT + DAKİKA) SEÇİCİ DİYALOG
     if (showIntervalDialog) {
-        var customInput by remember { mutableStateOf(intervalHours.toString()) }
+        var inputHours by remember { mutableStateOf(intervalHours.toString()) }
+        var inputMinutes by remember { mutableStateOf(intervalMinutes.toString()) }
+
         AlertDialog(
             onDismissRequest = { showIntervalDialog = false },
             containerColor = BraunCard,
-            title = { Text("Tekrar Aralığı (Saat)", color = BraunCharcoal, fontWeight = FontWeight.Bold) },
+            title = { Text("Tekrar Aralığı Belirle", color = BraunCharcoal, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Hızlı Hazır Butonlar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf(24, 48, 72).forEach { h ->
+                            val isSelected = intervalHours == h && intervalMinutes == 0
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(if (intervalHours == h) BraunCharcoal else BraunOffWhite)
+                                    .background(if (isSelected) BraunCharcoal else BraunOffWhite)
                                     .clickable {
+                                        inputHours = h.toString()
+                                        inputMinutes = "0"
                                         intervalHours = h
+                                        intervalMinutes = 0
                                         preferences.intervalHours = h
+                                        preferences.intervalMinutes = 0
                                         if (isAlarmActive) {
-                                            scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, h)
+                                            scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, h, 0)
                                             refreshState()
                                         }
                                         showIntervalDialog = false
@@ -344,34 +358,51 @@ fun MainScreen(context: Context) {
                             ) {
                                 Text(
                                     text = "${h}s",
-                                    color = if (intervalHours == h) Color.White else BraunCharcoal,
+                                    color = if (isSelected) Color.White else BraunCharcoal,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Özel Saat ve Dakika Girişi:", color = BraunSubText, fontSize = 12.sp)
 
-                    OutlinedTextField(
-                        value = customInput,
-                        onValueChange = { customInput = it.filter { ch -> ch.isDigit() } },
-                        label = { Text("Özel Saat Değeri", color = BraunSubText) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = inputHours,
+                            onValueChange = { inputHours = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Saat", color = BraunSubText) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        OutlinedTextField(
+                            value = inputMinutes,
+                            onValueChange = { inputMinutes = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Dakika", color = BraunSubText) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val parsed = customInput.toIntOrNull()
-                        if (parsed != null && parsed > 0) {
-                            intervalHours = parsed
-                            preferences.intervalHours = parsed
+                        val h = inputHours.toIntOrNull() ?: 0
+                        val m = inputMinutes.toIntOrNull() ?: 0
+                        if (h > 0 || m > 0) {
+                            intervalHours = h
+                            intervalMinutes = m
+                            preferences.intervalHours = h
+                            preferences.intervalMinutes = m
                             if (isAlarmActive) {
-                                scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, parsed)
+                                scheduler.startRoutine(targetYear, targetMonth, targetDay, targetHour, targetMinute, h, m)
                                 refreshState()
                             }
                         }
@@ -457,10 +488,10 @@ fun MainScreen(context: Context) {
 
     // TAKVİM LİSTESİ DİYALOG
     if (showScheduleListDialog) {
-        val upcomingAlarms = remember(nextTriggerMillis, intervalHours) {
+        val upcomingAlarms = remember(nextTriggerMillis, intervalHours, intervalMinutes) {
             val list = mutableListOf<String>()
             var current = nextTriggerMillis
-            val intervalMs = intervalHours * 3600 * 1000L
+            val intervalMs = ((intervalHours * 60L) + intervalMinutes) * 60L * 1000L
             val df = SimpleDateFormat("dd MMMM yyyy, EEEE - HH:mm", Locale("tr"))
             for (i in 1..8) {
                 list.add("$i. Seans: " + df.format(Date(current)))

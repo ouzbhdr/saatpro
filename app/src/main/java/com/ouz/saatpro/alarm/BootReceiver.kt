@@ -28,7 +28,8 @@ class BootReceiver : BroadcastReceiver() {
                         day = day,
                         hour = prefs.targetHour,
                         minute = prefs.targetMinute,
-                        intervalHours = prefs.intervalHours
+                        intervalHours = prefs.intervalHours,
+                        intervalMinutes = prefs.intervalMinutes
                     )
                 }
             }
